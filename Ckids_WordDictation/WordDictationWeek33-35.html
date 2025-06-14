@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <title>單字聽寫練習系統</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f2f5;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .box {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .content {
+      font-size: 20px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      min-height: 30px;
+    }
+
+    button {
+      padding: 20px 40px;
+      font-size: 32px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      background-color: #007BFF;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2 style="text-align: center;">單字聽寫練習系統 Week33-35</h2>
+
+  <div class="box">
+    <div class="label">🔹 中文翻譯區（A1）</div>
+    <div id="a1" class="content">請按「下一題」開始</div>
+  </div>
+
+  <div class="box">
+    <div class="label">🔹 上一題答案（A2）</div>
+    <div id="a2" class="content"></div>
+  </div>
+
+  <div style="text-align: center;">
+    <button onclick="playSound()">🔊 發音</button>
+    <button onclick="nextWord()">➡️ 下一題</button>
+    <button onclick="toggleRandom()">🔀 隨機出題</button>
+  </div>
+
+  <div class="status" id="status">模式：🔁 順序模式</div>
+
+  <script>
+    const wordList = [
+      "entrance", "enter", "entry", "leadership", "mislead", "leader", "careful", "careless", "carefree", "discount",
+      "counter", "countless", "account", "remove", "movement", "mover", "movable", "handy", "handle", "handicraft",
+      "hunger", "reptile", "sample", "tangle", "whisper", "swallow", "fable", "jungle", "silver", "grumble",
+      "target", "single", "candle", "blanket", "lantern", "tender", "stable", "sprinkle", "husband", "vegetable",
+      "robot", "credit", "model", "comet", "frozen", "limit", "profit", "nation", "basin", "private",
+      "product", "total", "basic", "rigid", "dragon", "final", "chosen", "petal", "pirate", "neither"
+    ];
+
+    let usedWords = [];
+    let currentWord = '';
+    let previousWord = '';
+    let isRandomMode = false;
+
+    function toggleRandom() {
+      isRandomMode = !isRandomMode;
+      document.getElementById('status').innerText = `模式：${isRandomMode ? '✅ 隨機模式' : '🔁 順序模式'}`;
+    }
+
+    async function nextWord() {
+      if (usedWords.length === wordList.length) {
+        document.getElementById('status').innerText = '✔️ 單字已完成！';
+        document.getElementById('a1').innerText = '';
+        return;
+      }
+
+      previousWord = currentWord;
+
+      const availableWords = wordList.filter(w => !usedWords.includes(w));
+      if (isRandomMode) {
+        const randomIndex = Math.floor(Math.random() * availableWords.length);
+        currentWord = availableWords[randomIndex];
+      } else {
+        currentWord = availableWords[0];
+      }
+
+      usedWords.push(currentWord);
+
+      if (previousWord) {
+        const prevTrans = await translateWord(previousWord);
+        document.getElementById('a2').innerText = `${previousWord}：${prevTrans}`;
+      }
+
+      const newTrans = await translateWord(currentWord);
+      document.getElementById('a1').innerText = newTrans;
+
+      document.getElementById('status').innerText =
+        `剩餘單字：${wordList.length - usedWords.length}（${isRandomMode ? '✅ 隨機' : '🔁 順序'}）`;
+    }
+
+    function playSound() {
+      if (!currentWord) {
+        alert("請先按『下一題』取得單字");
+        return;
+      }
+      const utter = new SpeechSynthesisUtterance(currentWord);
+      utter.lang = 'en-US';
+      speechSynthesis.speak(utter);
+    }
+
+    async function translateWord(word) {
+      try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${word}&langpair=en|zh-TW`);
+        const data = await response.json();
+        return data.responseData.translatedText || '翻譯錯誤';
+      } catch {
+        return '翻譯失敗';
+      }
+    }
+  </script>
+
+</body>
+
+</html>
